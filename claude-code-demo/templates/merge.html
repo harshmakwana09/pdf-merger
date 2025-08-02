@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}Arrange & Merge PDFs{% endblock %}
+
+{% block content %}
+<div class="text-center mb-8">
+    <h1 class="text-3xl font-bold text-gray-900 mb-2">
+        <i class="fas fa-object-group text-purple-600 mr-3"></i>
+        Arrange & Merge PDFs
+    </h1>
+    <p class="text-gray-600">Drag and drop to arrange your PDF files in the desired order</p>
+</div>
+
+<div class="max-w-4xl mx-auto">
+    <div class="bg-white rounded-lg shadow-xl">
+        <div class="p-8">
+            <form action="{{ url_for('merge_pdfs', session_id=session_id) }}" method="post" id="merge-form">
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">PDF Files ({{ files|length }})</h3>
+                    
+                    {% if files %}
+                        <div id="file-list" class="space-y-3">
+                            {% for file in files %}
+                                <div class="file-item bg-gray-50 border border-gray-200 rounded-lg p-4 cursor-move" data-filename="{{ file }}">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center space-x-3">
+                                            <div class="bg-red-100 rounded-full w-10 h-10 flex items-center justify-center">
+                                                <i class="fas fa-file-pdf text-red-500"></i>
+                                            </div>
+                                            <div>
+                                                <h4 class="font-medium text-gray-900">{{ file }}</h4>
+                                                <p class="text-sm text-gray-500">PDF Document</p>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center space-x-2">
+                                            <button type="button" class="move-up text-gray-400 hover:text-gray-600">
+                                                <i class="fas fa-chevron-up"></i>
+                                            </button>
+                                            <button type="button" class="move-down text-gray-400 hover:text-gray-600">
+                                                <i class="fas fa-chevron-down"></i>
+                                            </button>
+                                            <span class="order-number bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
+                                                {{ loop.index }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" name="file_order" value="{{ file }}" class="file-order-input">
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-8">
+                            <i class="fas fa-exclamation-triangle text-yellow-500 text-4xl mb-4"></i>
+                            <p class="text-gray-600">No PDF files found. Please upload some files first.</p>
+                            <a href="{{ url_for('index') }}" class="mt-4 inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg">
+                                <i class="fas fa-arrow-left mr-2"></i>
+                                Go Back
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+
+                {% if files %}
+                    <div class="flex justify-between items-center pt-6 border-t border-gray-200">
+                        <a href="{{ url_for('cleanup', session_id=session_id) }}" class="text-gray-600 hover:text-gray-800 font-medium">
+                            <i class="fas fa-trash mr-2"></i>
+                            Clear All Files
+                        </a>
+                        <button type="submit" class="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white font-bold py-3 px-8 rounded-lg transition duration-200 transform hover:scale-105">
+                            <i class="fas fa-object-group mr-2"></i>
+                            Merge PDFs
+                        </button>
+                    </div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const fileList = document.getElementById('file-list');
+    if (fileList) {
+        new Sortable(fileList, {
+            animation: 150,
+            ghostClass: 'bg-blue-50',
+            onEnd: function() {
+                updateOrderNumbers();
+                updateHiddenInputs();
+            }
+        });
+    }
+
+    // Move up/down buttons
+    document.querySelectorAll('.move-up').forEach(button => {
+        button.addEventListener('click', function() {
+            const item = this.closest('.file-item');
+            const prev = item.previousElementSibling;
+            if (prev && prev.classList.contains('file-item')) {
+                item.parentNode.insertBefore(item, prev);
+                updateOrderNumbers();
+                updateHiddenInputs();
+            }
+        });
+    });
+
+    document.querySelectorAll('.move-down').forEach(button => {
+        button.addEventListener('click', function() {
+            const item = this.closest('.file-item');
+            const next = item.nextElementSibling;
+            if (next && next.classList.contains('file-item')) {
+                item.parentNode.insertBefore(next, item);
+                updateOrderNumbers();
+                updateHiddenInputs();
+            }
+        });
+    });
+
+    function updateOrderNumbers() {
+        document.querySelectorAll('.file-item').forEach((item, index) => {
+            const orderNumber = item.querySelector('.order-number');
+            if (orderNumber) {
+                orderNumber.textContent = index + 1;
+            }
+        });
+    }
+
+    function updateHiddenInputs() {
+        const inputs = document.querySelectorAll('.file-order-input');
+        const items = document.querySelectorAll('.file-item');
+        
+        items.forEach((item, index) => {
+            const filename = item.dataset.filename;
+            inputs[index].value = filename;
+        });
+    }
+
+    // Initialize order numbers
+    updateOrderNumbers();
+});
+</script>
+{% endblock %} 
